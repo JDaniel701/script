@@ -11,18 +11,30 @@ $dbname = "buidxj45oivgjsnnmtsf";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+// Verificar conexión
+if ($conn->connect_error) {
+    die(json_encode(["status" => "error", "message" => "Conexión fallida"]));
+}
+
+// Verificar si el código QR fue enviado
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $codigo_qr = $_POST['codigo_qr'];
 
-    $sql = "SELECT * FROM documentos WHERE codigo_qr = '$codigo_qr'";
-    $result = $conn->query($sql);
+    // Consultar en la base de datos
+    $sql = "SELECT * FROM documentos WHERE codigo_qr = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $codigo_qr);
+    $stmt->execute();
+    $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
-        $row = $result->fetch_assoc();
-        echo json_encode(["status" => "success", "data" => $row]);
+        $documento = $result->fetch_assoc();
+        echo json_encode(["status" => "success", "data" => $documento]);
     } else {
-        echo json_encode(["status" => "error", "message" => "Documento no encontrado"]);
+        echo json_encode(["status" => "error", "message" => "Código no encontrado"]);
     }
+} else {
+    echo json_encode(["status" => "error", "message" => "Método no permitido"]);
 }
 
 $conn->close();
